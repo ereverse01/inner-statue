@@ -137,6 +137,21 @@ details.private .lines{margin-top:12px}
 .t-top{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
 .t-ico{font-size:28px;line-height:1}
 .t-del{padding:3px 10px;font-size:12px}
+.t-shot{position:relative;display:block;width:100%;aspect-ratio:4/5;max-height:300px;border:0;border-radius:10px;padding:0;cursor:zoom-in;background:radial-gradient(ellipse at 50% 40%,#2c3445 0%,var(--bg) 75%)}
+.t-shot img{width:100%;height:100%;object-fit:contain;display:block}
+.t-shot img:not([src]){visibility:hidden}
+.t-job{position:absolute;left:8px;bottom:8px;font-size:12px;background:rgba(23,27,34,.82);border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--fg)}
+.t-grid.gal{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.t-grid.gal .t-card{padding:12px;gap:8px}
+.t-grid.gal .t-shot{max-height:none}
+.t-cap{display:grid;gap:2px;font-size:13.5px;text-align:center}
+.t-grid.big.gal{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.t-grid.big .t-cap{font-size:17px}
+.t-modal{position:fixed;inset:0;background:rgba(10,12,16,.78);display:grid;place-items:center;padding:16px;z-index:50}
+.t-mbox{width:min(560px,100%);max-height:100%;overflow:auto}
+.t-mhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.t-mstage{height:min(60vh,520px);border-radius:10px;background:radial-gradient(ellipse at 50% 40%,#2c3445 0%,var(--bg) 75%)}
+.t-mstage canvas{display:block;width:100%;height:100%;cursor:grab}
 @media (max-width:480px){.t-grid,.t-grid.big{grid-template-columns:1fr}}
 </style>
 
@@ -250,7 +265,8 @@ async function call(body){
   const res = await fetch(SHEET_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
   return res.json();
 }
-if (location.hash === '#teacher'){ document.querySelector('.app').hidden = true; teacherMode(); return; }
+const IS_T = location.hash === '#teacher';
+if (IS_T) document.querySelector('.app').hidden = true;
 
 let S;
 function fresh(keep){
@@ -1085,14 +1101,65 @@ function restoreScene(){
   }
 }
 
-buildBlock();
-resize();
-pivot.rotation.y = -0.35;
-restoreScene();
-requestAnimationFrame(frame);
-if (S.view === 'final') renderFinal();
-else if (S.view === 'stage' && S.step >= 0) renderStage();
-else renderIntro();
+/* ------------------------------------------------------------------ 교사 화면용 조각상 그림 */
+// 학생 한 명의 완성 조각상(자세 + 10년 뒤 소품 + 표면)을 따로 그림. 카드 그림과 '크게 보기'에 같이 씀
+const snap = {};
+function snapInit(){
+  if (snap.r) return;
+  snap.r = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true});
+  snap.r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  snap.r.outputEncoding = THREE.sRGBEncoding;
+  snap.r.shadowMap.enabled = true; snap.r.shadowMap.type = THREE.PCFSoftShadowMap;
+  snap.scene = new THREE.Scene();
+  snap.scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x2a2420, 0.6));
+  const k = new THREE.DirectionalLight(0xffe2b8, 1.25); k.position.set(3.5, 6.5, 4.5); k.castShadow = true;
+  k.shadow.mapSize.set(1024, 1024); Object.assign(k.shadow.camera, {left:-3, right:3, top:4.5, bottom:-1, near:1, far:16});
+  snap.scene.add(k);
+  const rl = new THREE.DirectionalLight(0x8fb2ff, 0.5); rl.position.set(-4, 3, -4); snap.scene.add(rl);
+  snap.cam = new THREE.PerspectiveCamera(36, 0.8, 0.1, 50);
+  snap.base = new THREE.Group(); snap.scene.add(snap.base);
+  const pl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.4, 1.9), new THREE.MeshStandardMaterial({color:0x4a4f5b, roughness:0.7}));
+  pl.position.y = 0.2; pl.receiveShadow = pl.castShadow = true; snap.base.add(pl);
+}
+function rowJob(r){
+  if (r.job) return r.job;
+  const m = /I will be (.+?) and /.exec(r.en[3] || '');
+  return guessJob(m ? m[1] : (r.en[3] || ''));
+}
+function snapBuild(r){
+  snapInit();
+  if (snap.fig){ snap.base.remove(snap.fig); snap.fig.traverse(o => o.geometry && o.geometry.dispose()); }
+  const mat = statueMat.clone(); mat.roughness = 0.28 + (r.rough || 0) * 0.16;
+  snap.fig = new THREE.Group();
+  snap.fig.add(figure(r.type || 'heart', mat));
+  snap.fig.add(jobProps(rowJob(r), mat));
+  snap.fig.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  snap.base.add(snap.fig);
+}
+function snapSize(w, h){
+  snap.r.setSize(w, h, false);
+  snap.cam.aspect = w / h;
+  snap.cam.position.set(0, 2.2, w / h < 0.9 ? 7.6 : 6.6);
+  snap.cam.updateProjectionMatrix(); snap.cam.lookAt(0, 1.75, 0);
+}
+function snapshot(r){
+  snapBuild(r); snapSize(320, 400);
+  snap.base.rotation.y = -0.4;
+  snap.r.render(snap.scene, snap.cam);
+  return snap.r.domElement.toDataURL('image/png');
+}
+
+if (IS_T) teacherMode();
+else {
+  buildBlock();
+  resize();
+  pivot.rotation.y = -0.35;
+  restoreScene();
+  requestAnimationFrame(frame);
+  if (S.view === 'final') renderFinal();
+  else if (S.view === 'stage' && S.step >= 0) renderStage();
+  else renderIntro();
+}
 
 /* ------------------------------------------------------------------ 교사 모드 (#teacher) */
 function teacherMode(){
@@ -1100,7 +1167,8 @@ function teacherMode(){
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const ICON = {help:'🤝', speak:'🎤', flag:'🚩', run:'🏃', joy:'😄', make:'🔨', heart:'💛'};
   const OPT_KEY = 'is-teacher-opt';
-  const opt = Object.assign({cls:'', names:true, priv:false, big:false}, load(OPT_KEY, {}));
+  const opt = Object.assign({cls:'', names:true, priv:false, big:false, gallery:false}, load(OPT_KEY, {}));
+  const shots = {};   // 학번+제출 시각 → 조각상 그림
   let rows = [], tpw = '';
   try{ tpw = sessionStorage.getItem('is-tpw') || ''; }catch(e){}
   const root = $('#teacher'); root.hidden = false;
@@ -1143,13 +1211,21 @@ function teacherMode(){
           <label><input type="checkbox" id="oNames" ${opt.names ? 'checked' : ''}> 이름 보기</label>
           <label><input type="checkbox" id="oPriv" ${opt.priv ? 'checked' : ''}> 2·3번(나만 보기)도 보기</label>
           <label><input type="checkbox" id="oBig" ${opt.big ? 'checked' : ''}> 큰 글씨</label>
+          <label><input type="checkbox" id="oGal" ${opt.gallery ? 'checked' : ''}> 조각상만 보기</label>
           <button class="secondary" id="tRef" type="button">🔄 새로고침</button>
           <button class="secondary" id="tCopy" type="button">📋 엑셀용 복사</button>
         </div>
         <p class="muted">${list.length}명 제출 · 학생 화면의 2·3번(걸림돌·작은 실천)은 학생에게 '나만 보기'로 안내돼 있어요. 화면에 띄울 때는 끄고 보여 주세요.</p>
       </div>
-      <div class="t-grid ${opt.big ? 'big' : ''}">${list.map(r => `
+      <div class="t-grid ${opt.big ? 'big' : ''} ${opt.gallery ? 'gal' : ''}">${list.map(r => opt.gallery ? `
         <article class="card t-card">
+          <button class="t-shot" type="button" data-view="${esc(r.sid)}" aria-label="${r.cls}반 ${r.num}번 조각상 크게 보기"><img alt="" data-shot="${esc(r.sid)}"></button>
+          <div class="t-cap"><b>${r.cls}반 ${r.num}번${opt.names ? ' ' + esc(r.name) : ''}</b>
+            <span>${JOBS[rowJob(r)].icon} ${JOBS[rowJob(r)].ko}</span>
+            <span class="muted">A person who ${esc((/who (.+?)\.?$/.exec(r.en[0]) || [,''])[1])}</span></div>
+        </article>` : `
+        <article class="card t-card">
+          <button class="t-shot" type="button" data-view="${esc(r.sid)}" aria-label="${r.cls}반 ${r.num}번 조각상 크게 보기"><img alt="" data-shot="${esc(r.sid)}"><span class="t-job">${JOBS[rowJob(r)].icon} ${JOBS[rowJob(r)].ko}</span></button>
           <div class="t-top"><span class="t-ico" aria-hidden="true">${ICON[r.type] || '🗿'}</span>
             <div><b>${r.cls}반 ${r.num}번${opt.names ? ' ' + esc(r.name) : ''}</b>
             <div class="muted" style="font-size:12px">${new Date(r.time).toLocaleString('ko-KR', {month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'})}${r.rough ? ` · <span style="color:var(--rough)">거친 표면 ${r.rough}곳</span>` : ''}</div></div>
@@ -1160,6 +1236,9 @@ function teacherMode(){
     $('#oNames').onchange = e => { opt.names = e.target.checked; view(); };
     $('#oPriv').onchange = e => { opt.priv = e.target.checked; view(); };
     $('#oBig').onchange = e => { opt.big = e.target.checked; view(); };
+    $('#oGal').onchange = e => { opt.gallery = e.target.checked; view(); };
+    root.querySelectorAll('[data-view]').forEach(b => b.onclick = () => bigView(rows.find(x => x.sid === b.dataset.view)));
+    drawShots(list);
     $('#tRef').onclick = enter;
     $('#tCopy').onclick = async () => {
       const head = ['학번', '반', '번호', '이름', ...STAGES.map((s, i) => `${i+1}. ${s.short}`), '거친 표면'];
@@ -1177,6 +1256,62 @@ function teacherMode(){
       }catch(e){ b.disabled = false; alert('지우지 못했어요.'); }
     });
   }
+  // 카드 그림: 화면이 멈추지 않게 한 장씩 차례로 그림
+  let drawToken = 0;
+  async function drawShots(list){
+    const my = ++drawToken;
+    for (const r of list){
+      const key = r.sid + '|' + r.time;
+      if (!shots[key]){
+        await new Promise(res => setTimeout(res, 0));
+        if (my !== drawToken) return;
+        try{ shots[key] = snapshot(r); }catch(e){ shots[key] = ''; }
+      }
+      const img = root.querySelector(`img[data-shot="${CSS.escape(r.sid)}"]`);
+      if (img && shots[key]) img.src = shots[key];
+    }
+  }
+
+  // 크게 보기: 끌어서 돌리기, Esc·바깥 누르면 닫기
+  function bigView(r){
+    if (!r) return;
+    drawToken++;   // 카드 그림 그리기를 잠시 멈춤 (같은 그림판을 씀) → 닫으면 view()가 다시 그림
+    snapBuild(r);
+    const m = document.createElement('div');
+    m.className = 't-modal';
+    m.innerHTML = `<div class="t-mbox card" role="dialog" aria-modal="true" aria-label="조각상 크게 보기">
+      <div class="t-mhead"><b>${r.cls}반 ${r.num}번${opt.names ? ' ' + esc(r.name) : ''} · ${JOBS[rowJob(r)].icon} ${JOBS[rowJob(r)].ko}</b>
+        <button class="ghost-btn" type="button" id="mClose">닫기</button></div>
+      <div class="t-mstage"></div>
+      <div class="lines"><div class="line"><span class="en">${esc(r.en[0])}</span><span class="ko">${esc(r.ko[0])}</span></div>
+        <div class="line"><span class="en">${esc(r.en[3])}</span><span class="ko">${esc(r.ko[3])}</span></div></div>
+      <p class="muted" style="font-size:12.5px;text-align:center">끌어서 돌려 보기</p></div>`;
+    document.body.appendChild(m);
+    const stage = m.querySelector('.t-mstage'), cv = snap.r.domElement;
+    stage.appendChild(cv);
+    let on = true, drag = null, idle = 0, rot = -0.4, last = performance.now();
+    const fit = () => snapSize(stage.clientWidth, stage.clientHeight);
+    fit(); addEventListener('resize', fit);
+    cv.style.touchAction = 'none';
+    cv.onpointerdown = e => { drag = e.clientX; cv.setPointerCapture(e.pointerId); };
+    cv.onpointermove = e => { if (drag === null) return; rot += (e.clientX - drag) * 0.01; drag = e.clientX; idle = performance.now(); };
+    cv.onpointerup = cv.onpointercancel = () => { drag = null; idle = performance.now(); };
+    (function loop(now){
+      if (!on) return;
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      if (drag === null && now - idle > 2000) rot += dt * 0.3;
+      snap.base.rotation.y = rot;
+      snap.r.render(snap.scene, snap.cam);
+      requestAnimationFrame(loop);
+    })(last);
+    const close = () => { on = false; removeEventListener('resize', fit); removeEventListener('keydown', key); m.remove(); view(); };
+    const key = e => { if (e.key === 'Escape') close(); };
+    addEventListener('keydown', key);
+    m.onclick = e => { if (e.target === m) close(); };
+    m.querySelector('#mClose').onclick = close;
+    m.querySelector('#mClose').focus();
+  }
+
   (SHEET_URL && !tpw) ? login() : enter();
 }
 })();
