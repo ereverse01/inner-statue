@@ -235,7 +235,7 @@ const SKIP = new Set(['always','never','often','usually','really','sometimes','a
 /* ------------------------------------------------------------------ state */
 // 구글 시트에 연결한 Apps Script 웹 앱 주소 (비어 있으면 이 기기에만 저장되는 연습 모드)
 // 주소 뒤에 ?local 을 붙이면 시트 없이 이 기기에서만 연습
-const SHEET_URL = new URLSearchParams(location.search).has('local') ? '' : '';
+const SHEET_URL = new URLSearchParams(location.search).has('local') ? '' : 'https://script.google.com/macros/s/AKfycbwezdVCXRjY-CL0V0VsXHbCPGa6hZMwbkZZMHE7szgo1cBdnQjFQkr3Z3sTe9n0W1LvVw/exec';
 const STORE_KEY = 'is-student', LOCAL_KEY = 'is-local-rows';
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch(e){ return d; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
