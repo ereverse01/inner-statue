@@ -209,12 +209,19 @@ const STAGES = [
   { title:'10년 뒤 오늘 나의 모습', short:'10년 뒤',
     link:['waiting to be revealed','드러나기를 기다리던 조각상'],
     variants:[{ frame:['Ten years from today, I will be ',0,' and ',1,'.'], ko:'10년 뒤 오늘, 나는 ~하며 ~하고 있을 것이다.', tpl:'10년 뒤 오늘, 나는 {0} {1} 있을 것이다.',
-      slots:[{ rule:'ing', ph:'working at a company', head:'하고 있을 일 (-ing)', chips:[
+      slots:[{ rule:'ing', ph:'working at a company', head:'하고 있을 일 (-ing) · 조각상의 소품이 정해져요', chips:[
           {en:'working at a company', ko:'회사에서 일하며'},
           {en:'teaching at a school', ko:'학교에서 가르치며'},
           {en:'working at a hospital', ko:'병원에서 일하며'},
           {en:'designing games', ko:'게임을 디자인하며'},
-          {en:'running a small café', ko:'작은 카페를 운영하며'} ]},
+          {en:'running a small café', ko:'작은 카페를 운영하며'},
+          {en:'cooking at a restaurant', ko:'식당에서 요리하며'},
+          {en:'playing soccer on a team', ko:'팀에서 축구를 하며'},
+          {en:'making music', ko:'음악을 만들며'},
+          {en:'drawing webtoons', ko:'웹툰을 그리며'},
+          {en:'doing research in a lab', ko:'실험실에서 연구하며'},
+          {en:'keeping people safe as a firefighter', ko:'소방관으로 사람들을 지키며'},
+          {en:'making videos for YouTube', ko:'유튜브 영상을 만들며'} ]},
         { rule:'ing', ph:'helping people', head:'1번에서 쓴 모습 (-ing)', chips:[
           {en:'helping people', ko:'사람들을 돕고', type:'help'},
           {en:'confidently sharing my ideas', ko:'자신 있게 내 생각을 말하고', type:'speak'},
@@ -322,7 +329,7 @@ function renderIntro(){
       <li><span>내가 되고 싶은 사람을 써요. 조각상의 모양이 정해져요.</span></li>
       <li><span>지금 나의 모습이나 걸림돌을 써요. 조각상을 덮은 바위가 돼요.</span></li>
       <li><span>매일 실천할 작은 행동을 써요. 바위가 떨어져 나가요.</span></li>
-      <li><span>10년 뒤 오늘 나의 모습을 써요. 조각상이 완성돼요.</span></li>
+      <li><span>10년 뒤 오늘 나의 모습을 써요. 그 모습대로 조각상이 완성돼요.</span></li>
     </ol>
     <p class="muted" style="font-size:13.5px">단어 은행에서 고르면 <b>기본 칼</b>, 내 말로 직접 쓰면 <b>조각가의 칼</b>이라 덩어리가 더 크게 떨어져요.</p>
     <div class="row">
@@ -461,6 +468,10 @@ async function onCarve(){
     if (!S.rough[si] && wasRough){ polishFx(); }
     updatePolish();
     if (si === 1) relabelRock();
+    if (si === 3){
+      const j = guessJob(vals[0].en);
+      if (j !== S.job){ S.job = j; setJob(j); polishFx(); toast(`${JOBS[j].icon} <b>${JOBS[j].ko}</b>의 모습으로 바뀌었어요`); }
+    }
     renderStage();
     return;
   }
@@ -471,7 +482,8 @@ async function onCarve(){
   busy = false;
   if (S.rough[si]){ S.msg = {kind:'rough', hints}; renderStage(); return; }
   S.msg = null;
-  toast(sculptor ? '<b>조각가의 칼!</b> 큰 덩어리가 떨어졌어요' : '덩어리가 떨어졌어요');
+  toast(si === 3 ? `${JOBS[S.job].icon} <b>10년 뒤의 나</b>, ${JOBS[S.job].ko}의 모습이 드러났어요`
+    : sculptor ? '<b>조각가의 칼!</b> 큰 덩어리가 떨어졌어요' : '덩어리가 떨어졌어요');
   goNext();
 }
 function goNext(){
@@ -489,6 +501,7 @@ function renderFinal(){
     <div class="eyebrow">완성</div>
     <h1>${esc(nm)}의 조각상</h1>
     <div class="plaque"><span class="nm">${esc((S.name || 'MY STATUE').toUpperCase())}</span><span class="sub">A person who ${esc(curVals(0)[0].en.trim())}</span></div>
+    ${S.job ? `<p class="muted" style="font-size:13.5px;text-align:center">${JOBS[S.job].icon} 10년 뒤 <b style="color:var(--fg)">${JOBS[S.job].ko}</b>의 모습이 새겨졌어요. 4번 문장을 고치면 소품도 바뀌어요.</p>` : ''}
     ${roughN ? `<div class="msg rough">거친 표면이 ${roughN}곳 남았어요. ‘다듬기’를 눌러 문장을 고치면 조각상이 매끈해져요.</div>` : `<div class="msg okay">모든 표면이 매끈하게 다듬어졌어요.</div>`}
     <div class="lines">${L(0)}${L(3)}</div>
     <details class="private"><summary>나만 보기 · 걸림돌과 작은 실천 (2, 3번)</summary><div class="lines">${L(1)}${L(2)}</div></details>
@@ -513,7 +526,7 @@ async function submit(){
   const row = { sid:S.sid, grade:S.grade, cls:S.cls, num:S.num, name:S.name,
     en:[0,1,2,3].map(sentenceEn), ko:[0,1,2,3].map(sentenceKo),
     rough:S.rough.filter(Boolean).length, type:S.type,
-    state:JSON.stringify({type:S.type, rough:S.rough, sculpt:S.sculpt, ans:S.ans}) };
+    state:JSON.stringify({type:S.type, job:S.job, rough:S.rough, sculpt:S.sculpt, ans:S.ans}) };
   btn.disabled = true; m.hidden = false; m.className = 'msg'; m.textContent = '제출하는 중…';
   try{
     if (SHEET_URL){
@@ -645,6 +658,120 @@ function figure(type, mat){
     pose([0.05, -0.12], [-0.75, -0.75]);
   }
   return f;
+}
+// 4번 문장(10년 뒤 하고 있을 일) → 모자·몸에 두르는 것·받침대 소품
+const JOBS = {
+  office:{ko:'회사원', icon:'💼'}, teach:{ko:'선생님', icon:'📚'}, doctor:{ko:'의료인', icon:'🩺'},
+  game:{ko:'게임 개발자', icon:'🎮'}, code:{ko:'개발자', icon:'💻'}, cafe:{ko:'카페 사장님', icon:'☕'},
+  chef:{ko:'요리사', icon:'🍳'}, sport:{ko:'운동선수', icon:'⚽'}, music:{ko:'음악가', icon:'🎵'},
+  art:{ko:'예술가', icon:'🎨'}, science:{ko:'과학자', icon:'🧪'}, safety:{ko:'안전 지킴이', icon:'🚒'},
+  video:{ko:'크리에이터', icon:'🎥'}, writer:{ko:'작가', icon:'✍️'}, star:{ko:'꿈을 이룬 나', icon:'🏆'}
+};
+function guessJob(text){
+  const t = text.toLowerCase();
+  const rules = [
+    ['game', /game|gaming/], ['code', /program|coding|code|software|computer|app\b|apps\b|develop|\bai\b/],
+    ['doctor', /hospital|doctor|nurse|medic|patient|clinic|\bvet|pharmac|dentist/],
+    ['teach', /teach|school|professor|tutor|class/], ['cafe', /caf[eé]|coffee|barista|bakery|baking|bread/],
+    ['chef', /cook|chef|restaurant|food|kitchen/], ['sport', /soccer|football|baseball|basketball|volleyball|sport|athlet|swim|coach|player|team|tennis|golf|taekwondo|run\b|running/],
+    ['music', /music|sing|song|piano|guitar|band|idol|k-pop|drum|violin|concert/],
+    ['video', /youtube|video|film|movie|camera|photo|broadcast|stream|influenc|creator|actor|actress/],
+    ['art', /draw|paint|art|webtoon|illustrat|fashion|design|cartoon|animat/],
+    ['science', /research|lab\b|science|scien|engineer|robot|invent|space|astronaut/],
+    ['safety', /police|firefight|fire\b|soldier|army|rescue|safe|guard|pilot/],
+    ['writer', /writ|author|book|novel|journal|reporter|poet/],
+    ['office', /company|office|business|bank|ceo|manag|startup|lawyer|account|work/]
+  ];
+  for (const [k, re] of rules) if (re.test(t)) return k;
+  return 'star';
+}
+function box(w, h, d, mat){ const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.castShadow = true; return m; }
+function torus(r, t, mat, arc){ const m = new THREE.Mesh(new THREE.TorusGeometry(r, t, 8, 28, arc || Math.PI*2), mat); m.castShadow = true; return m; }
+function jobProps(job, mat){
+  const g = new THREE.Group();
+  const add = (m, x, y, z, rx, ry, rz) => { m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, rz || 0); g.add(m); return m; };
+  const PX = 0.68, PY = 0.4, PZ = 0.3;   // 받침대 위 소품 자리 (조각상 오른쪽 앞)
+  const apron = () => { add(box(0.5, 0.75, 0.025, mat), 0, 1.62, 0.37, -0.12); add(torus(0.36, 0.015, mat), 0, 2.02, 0, Math.PI/2); };
+  const glasses = () => { add(torus(0.065, 0.012, mat), -0.1, 2.88, 0.25); add(torus(0.065, 0.012, mat), 0.1, 2.88, 0.25); add(box(0.07, 0.015, 0.015, mat), 0, 2.88, 0.26); };
+  const books = (n) => { for (let i = 0; i < n; i++) add(box(0.42 - i*0.04, 0.09, 0.3 - i*0.02, mat), PX, PY + 0.05 + i*0.09, PZ, 0, i*0.25 - 0.2); return PY + 0.05 + n*0.09; };
+  if (job === 'office'){
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.42, 4), mat), 0, 2.15, 0.39, 0.12, Math.PI/4, Math.PI).castShadow = true;
+    add(box(0.09, 0.07, 0.05, mat), 0, 2.4, 0.37);
+    add(box(0.46, 0.32, 0.13, mat), PX, PY + 0.16, PZ); add(torus(0.07, 0.02, mat, Math.PI), PX, PY + 0.32, PZ);
+  } else if (job === 'teach'){
+    glasses();
+    const top = books(3); add(sph(0.09, mat), PX, top + 0.08, PZ); add(cyl(0.01, 0.01, 0.07, mat), PX, top + 0.18, PZ);
+  } else if (job === 'doctor'){
+    add(torus(0.17, 0.02, mat), 0, 2.32, 0.2, -1.2);
+    add(cyl(0.05, 0.05, 0.03, mat), 0.06, 2.12, 0.38, Math.PI/2);
+    add(torus(0.28, 0.02, mat), 0, 2.98, 0, Math.PI/2 + 0.2); add(cyl(0.07, 0.07, 0.015, mat), 0, 3.03, 0.27, Math.PI/2 - 0.3);
+    add(box(0.32, 0.1, 0.1, mat), PX, PY + 0.05, PZ); add(box(0.1, 0.32, 0.1, mat), PX, PY + 0.16, PZ);
+  } else if (job === 'game' || job === 'code'){
+    add(torus(0.31, 0.03, mat, Math.PI), 0, 2.86, 0);
+    add(sph(0.08, mat), -0.3, 2.84, 0).scale.set(0.6, 1, 1); add(sph(0.08, mat), 0.3, 2.84, 0).scale.set(0.6, 1, 1);
+    add(cyl(0.012, 0.012, 0.3, mat), -0.22, 2.74, 0.15, 1.2, 0, 0.3);
+    if (job === 'game'){
+      add(box(0.36, 0.07, 0.18, mat), PX, PY + 0.06, PZ); add(sph(0.08, mat), PX - 0.18, PY + 0.06, PZ + 0.05); add(sph(0.08, mat), PX + 0.18, PY + 0.06, PZ + 0.05);
+      add(cyl(0.03, 0.03, 0.04, mat), PX + 0.07, PY + 0.11, PZ - 0.02); add(box(0.08, 0.03, 0.025, mat), PX - 0.07, PY + 0.1, PZ - 0.02);
+    } else {
+      add(box(0.5, 0.03, 0.34, mat), PX, PY + 0.02, PZ); add(box(0.5, 0.32, 0.025, mat), PX, PY + 0.17, PZ - 0.2, -0.25);
+    }
+  } else if (job === 'cafe'){
+    apron();
+    add(cyl(0.2, 0.2, 0.02, mat), PX, PY + 0.01, PZ); add(cyl(0.11, 0.09, 0.2, mat), PX, PY + 0.12, PZ); add(torus(0.06, 0.018, mat), PX + 0.12, PY + 0.13, PZ, 0, 0, Math.PI/2);
+    for (let i = 0; i < 3; i++) add(torus(0.04, 0.008, mat, Math.PI), PX - 0.03 + i*0.03, PY + 0.3 + i*0.06, PZ, 0, 0, i % 2 ? 0 : Math.PI);
+  } else if (job === 'chef'){
+    apron();
+    add(cyl(0.22, 0.2, 0.22, mat), 0, 3.12, -0.01); add(sph(0.27, mat), 0, 3.3, -0.01).scale.set(1, 0.7, 1);
+    add(cyl(0.22, 0.2, 0.2, mat), PX, PY + 0.1, PZ); add(cyl(0.015, 0.015, 0.4, mat), PX + 0.08, PY + 0.32, PZ, 0, 0, -0.35);
+  } else if (job === 'sport'){
+    add(torus(0.275, 0.035, mat), 0, 2.95, 0, Math.PI/2 + 0.15);
+    const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.18, 1), new THREE.MeshStandardMaterial({map:mat.map, roughness:0.7, flatShading:true}));
+    ball.castShadow = true; add(ball, PX, PY + 0.18, PZ);
+  } else if (job === 'music'){
+    add(sph(0.11, mat), PX - 0.08, PY + 0.1, PZ).scale.set(1.3, 0.85, 1);
+    add(cyl(0.018, 0.018, 0.55, mat), PX + 0.05, PY + 0.37, PZ);
+    add(box(0.16, 0.05, 0.03, mat), PX + 0.12, PY + 0.58, PZ, 0, 0, -0.5);
+    add(torus(0.31, 0.03, mat, Math.PI), 0, 2.86, 0);
+    add(sph(0.08, mat), -0.3, 2.84, 0).scale.set(0.6, 1, 1); add(sph(0.08, mat), 0.3, 2.84, 0).scale.set(0.6, 1, 1);
+  } else if (job === 'art'){
+    add(sph(0.3, mat), 0.03, 3.07, 0, 0, 0, 0.25).scale.set(1, 0.32, 1);
+    add(cyl(0.24, 0.24, 0.03, mat), PX, PY + 0.25, PZ, 1.2, 0, 0.2);
+    add(cyl(0.015, 0.012, 0.5, mat), PX + 0.2, PY + 0.25, PZ + 0.1, 0.3, 0, -0.6);
+    for (let i = 0; i < 4; i++) add(sph(0.035, mat), PX - 0.12 + i*0.07, PY + 0.33, PZ + 0.07 - Math.abs(i - 1.5)*0.03);
+  } else if (job === 'science'){
+    add(box(0.42, 0.1, 0.06, mat), 0, 2.9, 0.25); add(torus(0.28, 0.018, mat), 0, 2.9, 0, Math.PI/2);
+    add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.26, 20), mat), PX, PY + 0.13, PZ).castShadow = true;
+    add(cyl(0.045, 0.045, 0.18, mat), PX, PY + 0.33, PZ); add(torus(0.05, 0.01, mat), PX, PY + 0.42, PZ, Math.PI/2);
+  } else if (job === 'safety'){
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.31, 24, 12, 0, Math.PI*2, 0, Math.PI/2), mat); helmet.castShadow = true;
+    add(helmet, 0, 2.9, 0); add(cyl(0.4, 0.42, 0.03, mat), 0, 2.92, 0.04, 0.12);
+    add(box(0.05, 0.16, 0.03, mat), 0, 3.08, 0.29, -0.4);
+    add(cyl(0.08, 0.08, 0.02, mat).clone(), -0.17, 2.2, 0.36, Math.PI/2);
+    add(cyl(0.11, 0.13, 0.42, mat), PX, PY + 0.21, PZ); add(cyl(0.05, 0.05, 0.1, mat), PX, PY + 0.47, PZ);
+    add(cyl(0.02, 0.03, 0.2, mat), PX + 0.12, PY + 0.4, PZ, 0, 0, -0.9);
+  } else if (job === 'video'){
+    add(box(0.36, 0.22, 0.2, mat), PX, PY + 0.36, PZ); add(cyl(0.08, 0.09, 0.14, mat), PX, PY + 0.36, PZ + 0.15, Math.PI/2);
+    for (const a of [0, 2.1, 4.2]) add(cyl(0.015, 0.015, 0.32, mat), PX + Math.cos(a)*0.08, PY + 0.13, PZ + Math.sin(a)*0.08, Math.sin(a)*0.35, 0, -Math.cos(a)*0.35);
+  } else if (job === 'writer'){
+    glasses();
+    add(box(0.26, 0.04, 0.34, mat), PX - 0.13, PY + 0.06, PZ, 0, 0, 0.18); add(box(0.26, 0.04, 0.34, mat), PX + 0.13, PY + 0.06, PZ, 0, 0, -0.18);
+    add(cyl(0.012, 0.004, 0.34, mat), PX + 0.05, PY + 0.17, PZ + 0.05, 0.2, 0, -1.1);
+  } else {
+    add(cyl(0.16, 0.18, 0.06, mat), PX, PY + 0.03, PZ); add(cyl(0.03, 0.03, 0.16, mat), PX, PY + 0.14, PZ);
+    add(cyl(0.17, 0.06, 0.22, mat), PX, PY + 0.33, PZ);
+    add(torus(0.07, 0.015, mat), PX - 0.17, PY + 0.34, PZ, 0, 0, Math.PI/2); add(torus(0.07, 0.015, mat), PX + 0.17, PY + 0.34, PZ, 0, 0, Math.PI/2);
+  }
+  // 받침대 위 소품은 멀리서도 보이게 1.5배
+  const P = new THREE.Vector3(PX, PY, PZ);
+  g.children.forEach(m => { if (m.position.y < 1.1){ m.position.sub(P).multiplyScalar(1.5).add(P); m.scale.multiplyScalar(1.5); } });
+  return g;
+}
+let props = null;
+function setJob(job){
+  if (props) pivot.remove(props);
+  props = job ? jobProps(job, statueMat) : null;
+  if (props) pivot.add(props);
 }
 function buildStatue(type){
   if (statue) pivot.remove(statue);
@@ -826,6 +953,7 @@ async function carveStage(si, sculptor){
   const batch = order.splice(0, n);
   const power = sculptor ? 1.6 : 1;
   const hits = si === 3 ? 5 : (sculptor ? 4 : 3);
+  if (si === 3){ S.job = guessJob(curVals(3)[0].en); setJob(S.job); }   // 대리석 안에 숨겨 두었다가 마지막에 드러남
   if (si === 2 && rock){
     // first knock the rock off
     const r = rock; rock = null;
@@ -883,6 +1011,7 @@ function resetScene(){
   dust.splice(0).forEach(m => pivot.remove(m));
   if (rock){ pivot.remove(rock); rock = null; }
   if (statue){ pivot.remove(statue); pivot.remove(ghost); statue = ghost = null; }
+  setJob(null);
   ghostMat.opacity = 0; glow.intensity = 0; statueMat.roughness = 0.92;
   plaqueMat.opacity = 0;
   buildBlock(); parkTools();
@@ -949,6 +1078,8 @@ function restoreScene(){
   if (S.carved[0] && !S.carved[3]){ ghostMat.opacity = 0.16; glow.intensity = 1.4; }
   if (S.carved[1] && !S.carved[2]) makeRock();
   if (S.carved[3]){
+    S.job = S.job || guessJob(curVals(3)[0].en);
+    setJob(S.job);
     plaqueMat.map = plaqueTex(); plaqueMat.needsUpdate = true; plaqueMat.opacity = 1;
     statueMat.roughness = 0.28 + S.rough.filter(Boolean).length * 0.16;
   }
