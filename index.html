@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>내 안의 조각상</title>
+<style>body{margin:0;padding:0}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: a sculptor's studio. Left = the marble on its plinth (3D), right = the work bench card for the current chisel stroke. */
+:root{
+  --bg:#171b22;          /* studio slate */
+  --panel:#1f242d;       /* work bench */
+  --raise:#272d38;       /* raised card */
+  --line:#353d4a;
+  --stone:#ece6dc;       /* marble */
+  --fg:#e8e4dc;
+  --muted:#9ba3b1;
+  --bronze:#cf9b55;      /* plaque bronze, the one accent */
+  --bronze-ink:#20160a;
+  --rough:#e08a6a;       /* rough-surface warning */
+  --ok:#8cc7a1;
+  --display:'Cinzel', 'Times New Roman', serif;
+  --body:'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,460px);height:100%}
+.stage{position:relative;min-height:0;min-width:0;background:radial-gradient(ellipse at 50% 35%,#283041 0%,var(--bg) 70%)}
+#c{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#c:active{cursor:grabbing}
+.hud{position:absolute;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;font-size:12.5px;color:var(--muted)}
+.hud button{pointer-events:auto}
+.ghost-btn{background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;color:var(--muted)}
+.ghost-btn:hover{color:var(--fg);border-color:var(--muted)}
+.toast{position:absolute;left:50%;top:18px;transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13.5px;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;transition:opacity .4s;opacity:0;pointer-events:none}
+.toast.on{opacity:1}
+.toast b{color:var(--bronze)}
+.panel{overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding-block:26px 40px;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px;min-width:0}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--bronze);font-weight:500}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.15;margin:0;letter-spacing:.02em;text-wrap:balance}
+h2{font-size:20px;margin:0;line-height:1.3;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--muted)}
+.quote{border-left:2px solid var(--bronze);padding:2px 0 2px 14px;display:grid;gap:4px}
+.quote .en{font-family:var(--display);font-size:15.5px;line-height:1.5}
+.ko{color:var(--muted);font-size:13.5px}
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:8px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);font-family:var(--display);font-weight:700;color:var(--bronze);font-size:17px;text-align:center;border:1px solid var(--line);border-radius:50%;width:28px;height:28px;line-height:26px}
+label.fld{display:grid;gap:6px;font-size:13.5px;color:var(--muted)}
+.txt{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+.txt:focus,.slot:focus{outline:2px solid var(--bronze);outline-offset:1px}
+.primary{background:var(--bronze);color:var(--bronze-ink);border:0;border-radius:10px;padding:13px 18px;font-weight:700;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.primary:hover{filter:brightness(1.08)}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.secondary{background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:500}
+.secondary:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
+.pips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pip{display:grid;gap:5px;font-size:11.5px;color:var(--muted);text-align:center}
+.pip i{display:block;height:4px;border-radius:2px;background:var(--line)}
+.pip.done i{background:var(--bronze)}
+.pip.now i{background:var(--stone)}
+.pip.now{color:var(--fg)}
+.card{background:var(--raise);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 13px;cursor:pointer;font-size:13.5px;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--stone);color:var(--bronze-ink);border-color:var(--stone);font-weight:500}
+.frame{font-family:var(--display);font-size:19px;line-height:2.1;word-break:break-word}
+.frame .fixed{white-space:pre-wrap}
+.slot{font-family:var(--body);font-size:15.5px;background:var(--bg);border:0;border-bottom:2px solid var(--bronze);border-radius:6px 6px 0 0;padding:3px 8px;min-width:6ch;max-width:100%;color:var(--stone)}
+.slot.own{border-bottom-color:var(--ok)}
+.frame-ko{font-size:14px;color:var(--muted);margin-top:-6px}
+.bank{display:grid;gap:8px}
+.bank-h{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:6px 10px;cursor:pointer;text-align:left;display:grid;gap:1px;max-width:100%}
+.chip .c-en{font-size:13.5px}
+.chip .c-ko{font-size:11.5px;color:var(--muted)}
+.chip:hover{border-color:var(--muted)}
+.chip.on{border-color:var(--bronze);background:#3a2f20}
+.chip .tag{font-size:10.5px;color:var(--bronze);font-weight:700}
+.meaning{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.meaning input{font-size:13.5px;padding:7px 10px}
+.preview{background:var(--bg);border-radius:10px;padding:12px 14px;display:grid;gap:4px}
+.preview .en{font-size:15.5px;color:var(--stone)}
+.knife{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-size:12px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);color:var(--muted)}
+.badge.big{border-color:var(--ok);color:var(--ok)}
+.msg{border-radius:10px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.msg.err{background:#3b2222;color:#f2c0b0}
+.msg.rough{background:#3a2a20;color:#f0c6ad;border:1px dashed var(--rough)}
+.msg.okay{background:#1f3328;color:#bfe5cc}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 auto}
+details.ex{font-size:13.5px}
+details.ex summary{cursor:pointer;color:var(--muted)}
+details.ex div{padding:8px 0 0 2px;display:grid;gap:2px}
+.link{font-size:12.5px;color:var(--muted)}
+.link em{font-family:var(--display);font-style:normal;color:var(--fg)}
+.plaque{background:linear-gradient(160deg,#d7a865,#a8743a);color:var(--bronze-ink);border-radius:12px;padding:18px;display:grid;gap:4px;text-align:center}
+.plaque .nm{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.06em}
+.plaque .sub{font-size:13px}
+.lines{display:grid;gap:12px}
+.line{display:grid;gap:3px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.line:last-child{border-bottom:0;padding-bottom:0}
+.line .lab{font-size:11.5px;color:var(--bronze);letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.line .en{font-size:15.5px;color:var(--stone)}
+.fix{font-size:11.5px;border:1px solid var(--rough);color:var(--rough);background:transparent;border-radius:999px;padding:2px 9px;cursor:pointer;text-transform:none;letter-spacing:0}
+details.private{border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+details.private summary{cursor:pointer;color:var(--muted);font-size:13.5px}
+details.private .lines{margin-top:12px}
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:50vh;height:50svh;min-height:320px}
+  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  h1{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* 교사 모드 */
+#teacher{padding:24px 16px 60px;max-width:1280px;margin:0 auto;display:grid;gap:18px}
+.t-login{max-width:380px;margin:12vh auto 0;width:100%}
+.t-head{display:grid;gap:10px}
+.t-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:14px}
+.t-bar select{width:auto;padding:7px 10px}
+.t-bar label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.t-bar .secondary{padding:7px 12px;font-size:14px}
+.t-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:start}
+.t-grid.big{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
+.t-grid.big .line .en{font-size:20px}
+.t-grid.big .line .ko{font-size:16px}
+.t-card{gap:12px}
+.t-top{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.t-ico{font-size:28px;line-height:1}
+.t-del{padding:3px 10px;font-size:12px}
+@media (max-width:480px){.t-grid,.t-grid.big{grid-template-columns:1fr}}
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="대리석 조각 작업대">
+    <canvas id="c" aria-label="대리석 덩어리와 조각상. 끌어서 돌려 볼 수 있어요."></canvas>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="hud">
+      <span id="hint">끌어서 돌려 보기</span>
+      <button class="ghost-btn" id="soundBtn" type="button" aria-pressed="true">소리 켜짐</button>
+    </div>
+  </section>
+  <section class="panel" id="panel" aria-label="조각 작업 카드"></section>
+</div>
+<main id="teacher" hidden></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+/* ------------------------------------------------------------------ data */
+const STAGES = [
+  { title:'내가 되고 싶은 사람', short:'되고 싶은 나',
+    link:['the statue already inside the block','대리석 안에 이미 있는 조각상'],
+    variants:[{ frame:['I want to be a person who ',0,'.'], ko:'나는 ~하는 사람이 되고 싶다.', tpl:'나는 {0} 사람이 되고 싶다.',
+      slots:[{ rule:'v3s', ph:'helps others', head:'되고 싶은 모습 (조각상 모양이 정해져요)', chips:[
+        {en:'helps others', ko:'남을 돕는', type:'help'},
+        {en:'speaks confidently in front of people', ko:'사람들 앞에서 자신 있게 말하는', type:'speak'},
+        {en:'never gives up', ko:'포기하지 않는', type:'flag'},
+        {en:'takes good care of my health', ko:'건강을 잘 챙기는', type:'run'},
+        {en:'makes people laugh', ko:'사람들을 웃게 하는', type:'joy'},
+        {en:'creates useful things', ko:'쓸모 있는 것을 만드는', type:'make'} ]}],
+      example:{en:'I want to be a person who speaks confidently in front of people.', ko:'나는 사람들 앞에서 자신 있게 말하는 사람이 되고 싶다.'} }] },
+  { title:'지금 나의 모습 또는 걸림돌', short:'지금의 나',
+    link:['rocks burying our true selves','진짜 나를 덮고 있는 바위'],
+    variants:[
+     { label:'지금 모습', frame:['Right now, when ',0,', I usually ',1,'.'], ko:'지금 나는 ~할 때 보통 ~한다.', tpl:'지금 나는 {0} 때 보통 {1}.',
+       slots:[{ rule:null, ph:'the teacher asks a question', head:'언제', chips:[
+          {en:'the teacher asks a question', ko:'선생님이 질문하실'},
+          {en:'we do group work', ko:'모둠 활동을 할'},
+          {en:'I get my test back', ko:'시험지를 돌려받을'},
+          {en:'I meet new classmates', ko:'새 친구들을 만날'} ]},
+        { rule:'base', ph:'look down at my desk', head:'나는 보통', chips:[
+          {en:'look down at my desk', ko:'책상을 내려다본다'},
+          {en:'let others talk first', ko:'다른 사람이 먼저 말하게 둔다'},
+          {en:'hide my paper quickly', ko:'시험지를 재빨리 숨긴다'},
+          {en:'stay quiet', ko:'조용히 있는다'} ]}],
+       example:{en:'Right now, when the teacher asks a question, I usually look down at my desk.', ko:'지금 나는 선생님이 질문하실 때 보통 책상을 내려다본다.'} },
+     { label:'걸림돌', frame:['Right now, ',0,' keeps me from ',1,'.'], ko:'지금은 ~ 때문에 나는 ~하지 못한다.', tpl:'지금은 {0} 때문에 나는 {1} 못한다.',
+       slots:[{ rule:null, ph:'my fear of making mistakes', head:'걸림돌', chips:[
+          {en:'my fear of making mistakes', ko:'실수에 대한 두려움'},
+          {en:'my phone', ko:'휴대폰'},
+          {en:'staying up late', ko:'늦게 자는 습관'},
+          {en:'comparing myself with others', ko:'남과 나를 비교하는 것'} ]},
+        { rule:'ing', ph:'speaking up in class', head:'하지 못하는 것 (-ing)', chips:[
+          {en:'speaking up in class', ko:'수업 시간에 말하지'},
+          {en:'asking questions', ko:'질문하지'},
+          {en:'trying hard problems', ko:'어려운 문제에 도전하지'},
+          {en:'making new friends', ko:'새 친구를 사귀지'} ]}],
+       example:{en:'Right now, my fear of making mistakes keeps me from speaking up in class.', ko:'지금은 실수에 대한 두려움 때문에 나는 수업 시간에 말하지 못한다.'} } ] },
+  { title:'실천할 작은 행동', short:'작은 실천',
+    link:['carved away the excess','불필요한 부분을 깎아 냈다'],
+    variants:[{ frame:['To remove this rock, I will ',0,' every day.'], ko:'이 바위를 깎아 내기 위해, 나는 매일 ~할 것이다.', tpl:'이 바위를 깎아 내기 위해, 나는 매일 {0} 것이다.',
+      slots:[{ rule:'base', ph:'raise my hand once in English class', head:'매일 할 작은 행동 (언제, 얼마나)', chips:[
+        {en:'raise my hand once in English class', ko:'영어 시간에 한 번 손을 들'},
+        {en:'practice speaking in front of a mirror for five minutes', ko:'거울 앞에서 5분 동안 말하기 연습을 할'},
+        {en:'put my phone away after 11 p.m.', ko:'밤 11시 이후에는 휴대폰을 치울'},
+        {en:'walk for 20 minutes', ko:'20분 동안 걸을'},
+        {en:'write down one thing I did well', ko:'내가 잘한 일 하나를 적을'} ]}],
+      example:{en:'To remove this rock, I will raise my hand once in English class every day.', ko:'이 바위를 깎아 내기 위해, 나는 매일 영어 시간에 한 번 손을 들 것이다.'} }] },
+  { title:'10년 뒤 오늘 나의 모습', short:'10년 뒤',
+    link:['waiting to be revealed','드러나기를 기다리던 조각상'],
+    variants:[{ frame:['Ten years from today, I will be ',0,' and ',1,'.'], ko:'10년 뒤 오늘, 나는 ~하며 ~하고 있을 것이다.', tpl:'10년 뒤 오늘, 나는 {0} {1} 있을 것이다.',
+      slots:[{ rule:'ing', ph:'working at a company', head:'하고 있을 일 (-ing)', chips:[
+          {en:'working at a company', ko:'회사에서 일하며'},
+          {en:'teaching at a school', ko:'학교에서 가르치며'},
+          {en:'working at a hospital', ko:'병원에서 일하며'},
+          {en:'designing games', ko:'게임을 디자인하며'},
+          {en:'running a small café', ko:'작은 카페를 운영하며'} ]},
+        { rule:'ing', ph:'helping people', head:'1번에서 쓴 모습 (-ing)', chips:[
+          {en:'helping people', ko:'사람들을 돕고', type:'help'},
+          {en:'confidently sharing my ideas', ko:'자신 있게 내 생각을 말하고', type:'speak'},
+          {en:'never giving up on my goals', ko:'목표를 포기하지 않고', type:'flag'},
+          {en:'staying healthy', ko:'건강하게 지내고', type:'run'},
+          {en:'making people laugh', ko:'사람들을 웃게 하고', type:'joy'},
+          {en:'creating useful things', ko:'쓸모 있는 것을 만들고', type:'make'} ]}],
+      example:{en:'Ten years from today, I will be working at a company and confidently sharing ideas that help my team.', ko:'10년 뒤 오늘, 나는 회사에서 일하며 팀에 도움이 되는 생각을 자신 있게 말하고 있을 것이다.'} }] }
+];
+const SHARE = [0.12, 0.28, 0.30, 1];   // share of the block each stroke removes
+const HINTS = {
+  v3s:'who 뒤의 동사는 3인칭 단수형이에요. 예: help → helps, make → makes',
+  base:'이 자리에는 동사원형이 와요. 예: raises → raise, walking → walk',
+  ing:'이 자리에는 -ing 형태가 와요. 예: help → helping, work → working'
+};
+const SKIP = new Set(['always','never','often','usually','really','sometimes','also','just','still','not','confidently','happily','kindly','actually']);
+
+/* ------------------------------------------------------------------ state */
+// 구글 시트에 연결한 Apps Script 웹 앱 주소 (비어 있으면 이 기기에만 저장되는 연습 모드)
+// 주소 뒤에 ?local 을 붙이면 시트 없이 이 기기에서만 연습
+const SHEET_URL = new URLSearchParams(location.search).has('local') ? '' : '';
+const STORE_KEY = 'is-student', LOCAL_KEY = 'is-local-rows';
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch(e){ return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+async function call(body){
+  const res = await fetch(SHEET_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)});
+  return res.json();
+}
+if (location.hash === '#teacher'){ document.querySelector('.app').hidden = true; teacherMode(); return; }
+
+let S;
+function fresh(keep){
+  return { sid:'', name:'', grade:0, cls:0, num:0, ...(keep || {}),
+    step:-1, view:'intro', type:null, carved:[false,false,false,false], rough:[false,false,false,false], sculpt:[false,false,false,false],
+    ans: STAGES.map(st => ({ v:0, vals: st.variants.map(v => v.slots.map(() => ({en:'',ko:'',chip:false,type:null,meaning:''}))) })),
+    msg:null, revise:false, sentAt:null };
+}
+// 새로고침해도 하던 곳으로 돌아오도록 이 기기에 저장
+S = Object.assign(fresh(), load(STORE_KEY, {}));
+S.msg = null;
+const persist = () => save(STORE_KEY, S);
+
+/* ------------------------------------------------------------------ helpers */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hasKo = s => /[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(s);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function firstWord(s){
+  const ws = s.trim().toLowerCase().replace(/[^a-z' -]/g,' ').split(/\s+/).filter(Boolean);
+  for (const w of ws){ if (!SKIP.has(w) && !/ly$/.test(w)) return w; }
+  return ws[0] || '';
+}
+function ruleOk(rule, text){
+  const w = firstWord(text);
+  if (!rule || !w) return true;
+  if (rule === 'v3s') return /s$/.test(w) && !/ing$/.test(w) || ['is','has','can','will','does','could'].includes(w);
+  if (rule === 'base') return !(/ing$/.test(w) || /ed$/.test(w) || (/[^su]s$/.test(w) && w.length > 3 && !['always','does','has','is','was'].includes(w)));
+  if (rule === 'ing') return /ing$/.test(w);
+  return true;
+}
+function curVariant(si){ return STAGES[si].variants[S.ans[si].v]; }
+function curVals(si){ return S.ans[si].vals[S.ans[si].v]; }
+function sentenceEn(si){
+  const v = curVariant(si), vals = curVals(si);
+  return v.frame.map(p => typeof p === 'number' ? (vals[p].en.trim() || '___') : p).join('');
+}
+function sentenceKo(si){
+  const v = curVariant(si), vals = curVals(si);
+  return v.tpl.replace(/\{(\d)\}/g, (_, i) => {
+    const x = vals[+i];
+    if (!x.en.trim()) return '___';
+    if (x.chip) return x.ko;
+    return x.meaning.trim() ? x.meaning.trim() : `‘${x.en.trim()}’`;
+  });
+}
+function isSculptor(si){ return curVals(si).some(x => x.en.trim() && !x.chip); }
+function guessType(text){
+  const t = text.toLowerCase();
+  if (/help|care for|kind|support|volunteer/.test(t)) return 'help';
+  if (/speak|talk|present|sing|say|voice|confiden/.test(t)) return 'speak';
+  if (/give up|try|challenge|brave|goal|win/.test(t)) return 'flag';
+  if (/health|exercise|run|sport|play|strong|fit|dance/.test(t)) return 'run';
+  if (/laugh|fun|happy|smile|joke/.test(t)) return 'joy';
+  if (/make|create|build|design|draw|cook|write|invent/.test(t)) return 'make';
+  return 'heart';
+}
+let toastT;
+function toast(html){ const t = $('#toast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ------------------------------------------------------------------ panel UI */
+const panel = $('#panel');
+function pips(){
+  return `<div class="pips" aria-label="진행">${STAGES.map((st,i) => `<div class="pip ${S.carved[i]?'done':''} ${i===S.step&&S.view==='stage'?'now':''}"><i></i>${i+1}. ${st.short}</div>`).join('')}</div>`;
+}
+function renderIntro(){
+  panel.innerHTML = `
+    <div class="eyebrow">6번 지문 · 조각 활동</div>
+    <h1>내 안의 조각상</h1>
+    <div class="quote">
+      <p class="en">He just imagined the statue already inside the block of rough marble, and then carved away the excess.</p>
+      <p class="ko">그는 거친 대리석 덩어리 안에 이미 조각상이 있다고 상상한 다음, 불필요한 부분을 깎아 냈을 뿐이다.</p>
+    </div>
+    <p>영어 문장 한 개가 조각칼질 한 번이에요. 네 문장을 쓰면 대리석 안에 있던 나의 조각상이 드러나요.</p>
+    <ol class="steps">
+      <li><span>내가 되고 싶은 사람을 써요. 조각상의 모양이 정해져요.</span></li>
+      <li><span>지금 나의 모습이나 걸림돌을 써요. 조각상을 덮은 바위가 돼요.</span></li>
+      <li><span>매일 실천할 작은 행동을 써요. 바위가 떨어져 나가요.</span></li>
+      <li><span>10년 뒤 오늘 나의 모습을 써요. 조각상이 완성돼요.</span></li>
+    </ol>
+    <p class="muted" style="font-size:13.5px">단어 은행에서 고르면 <b>기본 칼</b>, 내 말로 직접 쓰면 <b>조각가의 칼</b>이라 덩어리가 더 크게 떨어져요.</p>
+    <div class="row">
+      <label class="fld" for="sidIn" style="flex:0 1 9em">학번 (5자리)
+        <input class="txt" id="sidIn" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="예: 10315" value="${esc(S.sid)}">
+      </label>
+      <label class="fld" for="nameIn" style="flex:1 1 9em">이름 (받침대에 새겨져요)
+        <input class="txt" id="nameIn" maxlength="20" autocomplete="off" placeholder="예: 김민지" value="${esc(S.name)}">
+      </label>
+    </div>
+    <div class="msg err" id="startMsg" role="alert" hidden></div>
+    <button class="primary" id="startBtn" type="button">조각 시작하기</button>
+    <p style="text-align:right"><a class="link" href="#teacher" onclick="setTimeout(()=>location.reload())">교사 모드</a></p>`;
+  $('#startBtn').onclick = () => {
+    const sid = $('#sidIn').value.trim(), name = $('#nameIn').value.trim(), p = parseSid(sid);
+    const m = $('#startMsg');
+    if (!p){ m.textContent = '학번 5자리를 확인해 주세요. (예: 1학년 3반 15번 → 10315)'; m.hidden = false; return; }
+    if (!name){ m.textContent = '이름을 써 주세요.'; m.hidden = false; return; }
+    Object.assign(S, {sid, name}, p);
+    S.step = 0; S.view = 'stage'; renderStage();
+  };
+  $('#sidIn').onkeydown = $('#nameIn').onkeydown = e => { if (e.key === 'Enter') $('#startBtn').click(); };
+}
+function parseSid(s){
+  if (!/^\d{5}$/.test(s)) return null;
+  const grade = +s[0], cls = +s.slice(1, 3), num = +s.slice(3);
+  if (grade < 1 || grade > 3 || cls < 1 || num < 1) return null;
+  return {grade, cls, num};
+}
+
+function renderStage(focusSlot){
+  persist();
+  const si = S.step, st = STAGES[si], v = curVariant(si), vals = curVals(si);
+  const already = S.carved[si];
+  const frameHtml = v.frame.map(p => typeof p === 'number'
+    ? `<input class="slot ${vals[p].en && !vals[p].chip ? 'own':''}" id="slot-${si}-${S.ans[si].v}-${p}" data-slot="${p}" autocomplete="off" spellcheck="false" placeholder="${esc(v.slots[p].ph)}" aria-label="빈칸 ${p+1}" value="${esc(vals[p].en)}">`
+    : `<span class="fixed">${esc(p)}</span>`).join('');
+  const linkType = si === 3 ? S.type : null;
+  const banks = v.slots.map((sl, i) => `
+    <div class="bank">
+      <div class="bank-h">${v.slots.length > 1 ? `빈칸 ${i+1} · ` : ''}${esc(sl.head)}</div>
+      <div class="chips">${sl.chips.map((c, k) => `<button type="button" class="chip ${vals[i].chip && vals[i].en === c.en ? 'on':''}" data-s="${i}" data-k="${k}">${linkType && c.type === linkType ? '<span class="tag">1번과 연결</span>' : ''}<span class="c-en">${esc(c.en)}</span><span class="c-ko">${esc(c.ko)}</span></button>`).join('')}</div>
+      ${vals[i].en.trim() && !vals[i].chip ? `<label class="meaning" for="mean-${i}">‘${esc(vals[i].en.trim())}’의 뜻 (한국어, 선택)<input class="txt" id="mean-${i}" data-m="${i}" autocomplete="off" value="${esc(vals[i].meaning)}"></label>` : ''}
+    </div>`).join('');
+  const tabs = st.variants.length > 1 ? `<div class="tabs" role="group" aria-label="틀 고르기">${st.variants.map((x, i) => `<button type="button" class="tab" data-v="${i}" aria-pressed="${i===S.ans[si].v}">틀 ${'AB'[i]} · ${x.label}</button>`).join('')}</div>` : '';
+  const m = S.msg;
+  const msgHtml = !m ? '' : m.kind === 'err'
+    ? `<div class="msg err" role="alert">${esc(m.text)}</div>`
+    : m.kind === 'rough'
+      ? `<div class="msg rough"><b>거친 표면이 남았어요</b>${m.hints.map(h => `<span>${esc(h)}</span>`).join('')}<span>문장을 고친 뒤 ‘다듬기’를 누르면 표면이 매끈해져요.</span></div>`
+      : `<div class="msg okay">${esc(m.text)}</div>`;
+  const btnLabel = already ? '다듬기' : (isSculptor(si) ? '조각가의 칼로 깎기' : '깎기');
+  panel.innerHTML = `
+    ${pips()}
+    <div class="eyebrow">칼질 ${si+1} / 4</div>
+    <h2>${esc(st.title)}</h2>
+    <p class="link">지문 연결 · <em>${esc(st.link[0])}</em> (${esc(st.link[1])})</p>
+    <div class="card">
+      ${tabs}
+      <div class="frame">${frameHtml}</div>
+      <p class="frame-ko">${esc(v.ko)}</p>
+      ${banks}
+      <div class="preview" aria-label="완성 문장">
+        <span class="en">${esc(sentenceEn(si))}</span>
+        <span class="ko">${esc(sentenceKo(si))}</span>
+      </div>
+      <details class="ex"><summary>예시 문장 보기</summary><div><span>${esc(v.example.en)}</span><span class="ko">${esc(v.example.ko)}</span></div></details>
+    </div>
+    ${msgHtml}
+    <div class="knife"><span class="badge ${isSculptor(si)?'big':''}">${isSculptor(si) ? '조각가의 칼 · 내 말로 쓴 표현' : '기본 칼 · 단어 은행'}</span></div>
+    <div class="row">
+      <button class="primary" id="carveBtn" type="button">${btnLabel}</button>
+      ${already ? `<button class="secondary" id="nextBtn" type="button">${S.revise ? '완성 작품으로' : (si === 3 ? '완성 작품 보기' : '다음 칼질로')}</button>` : ''}
+    </div>`;
+  // events
+  panel.querySelectorAll('.slot').forEach(inp => {
+    autoSize(inp);
+    inp.addEventListener('input', () => {
+      const i = +inp.dataset.slot, x = vals[i];
+      x.en = inp.value;
+      const chip = v.slots[i].chips.find(c => c.en === inp.value);
+      x.chip = !!chip; x.ko = chip ? chip.ko : ''; x.type = chip ? (chip.type || null) : null;
+      S.msg = null;
+      autoSize(inp);
+      softRefresh(si, i, inp);
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') $('#carveBtn').click(); });
+  });
+  panel.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const i = +b.dataset.s, c = v.slots[i].chips[+b.dataset.k];
+    Object.assign(vals[i], {en:c.en, ko:c.ko, chip:true, type:c.type || null});
+    S.msg = null; renderStage(i);
+  });
+  panel.querySelectorAll('[data-m]').forEach(inp => inp.addEventListener('input', () => {
+    vals[+inp.dataset.m].meaning = inp.value; persist();
+    panel.querySelector('.preview .ko').textContent = sentenceKo(si);
+  }));
+  panel.querySelectorAll('.tab').forEach(b => b.onclick = () => { S.ans[si].v = +b.dataset.v; S.msg = null; renderStage(); });
+  $('#carveBtn').onclick = onCarve;
+  const nb = $('#nextBtn'); if (nb) nb.onclick = goNext;
+  if (focusSlot != null){ const el = panel.querySelector(`[data-slot="${focusSlot}"]`); if (el && matchMedia('(min-width:861px)').matches) el.focus({preventScroll:true}); }
+  setBusy(busy);
+}
+// redraw the parts that depend on typing without stealing focus
+let softT;
+function softRefresh(si, i, inp){
+  clearTimeout(softT);
+  softT = setTimeout(() => {
+    const pos = inp.selectionStart;
+    renderStage();
+    const el = panel.querySelector(`[data-slot="${i}"]`);
+    if (el){ el.focus({preventScroll:true}); try{ el.setSelectionRange(pos, pos); }catch(e){} }
+  }, 450);
+  panel.querySelector('.preview .en').textContent = sentenceEn(si);
+  panel.querySelector('.preview .ko').textContent = sentenceKo(si);
+}
+function autoSize(inp){ inp.style.width = Math.min(Math.max(inp.value.length, inp.placeholder.length * .8, 6) + 2, 60) + 'ch'; }
+function setBusy(b){ const c = $('#carveBtn'); if (c) c.disabled = b; const n = $('#nextBtn'); if (n) n.disabled = b; }
+
+async function onCarve(){
+  if (busy) return;
+  const si = S.step, v = curVariant(si), vals = curVals(si);
+  if (vals.some(x => !x.en.trim())){ S.msg = {kind:'err', text:'빈칸을 모두 채워 주세요. 단어 은행에서 골라도 돼요.'}; renderStage(); return; }
+  if (vals.some(x => hasKo(x.en))){ S.msg = {kind:'err', text:'빈칸에는 영어로 써 주세요. 우리말 뜻은 아래 ‘뜻’ 칸에 적을 수 있어요.'}; renderStage(); return; }
+  const hints = [];
+  vals.forEach((x, i) => { if (!x.chip && !ruleOk(v.slots[i].rule, x.en)) hints.push(HINTS[v.slots[i].rule]); });
+  const wasRough = S.rough[si];
+  S.rough[si] = hints.length > 0;
+  if (si === 0){
+    const t = vals[0].chip ? vals[0].type : guessType(vals[0].en);
+    if (t !== S.type){ S.type = t; buildStatue(t); }
+  }
+  if (S.carved[si]){
+    // polishing an already carved stroke
+    S.msg = S.rough[si] ? {kind:'rough', hints} : {kind:'okay', text: wasRough ? '표면이 매끈하게 다듬어졌어요.' : '문장을 고쳐 새겼어요.'};
+    if (!S.rough[si] && wasRough){ polishFx(); }
+    updatePolish();
+    if (si === 1) relabelRock();
+    renderStage();
+    return;
+  }
+  busy = true; setBusy(true);
+  const sculptor = isSculptor(si);
+  await carveStage(si, sculptor);
+  S.carved[si] = true; S.sculpt[si] = sculptor;
+  busy = false;
+  if (S.rough[si]){ S.msg = {kind:'rough', hints}; renderStage(); return; }
+  S.msg = null;
+  toast(sculptor ? '<b>조각가의 칼!</b> 큰 덩어리가 떨어졌어요' : '덩어리가 떨어졌어요');
+  goNext();
+}
+function goNext(){
+  S.msg = null;
+  if (S.revise || S.step === 3){ S.revise = false; S.view = 'final'; renderFinal(); return; }
+  S.step++; renderStage();
+}
+function renderFinal(){
+  persist();
+  const nm = S.name || '나';
+  const L = i => `<div class="line"><div class="lab"><span>${i+1}. ${esc(STAGES[i].short)}</span>${S.rough[i] ? `<button class="fix" type="button" data-fix="${i}">거친 표면 · 다듬기</button>` : ''}</div><span class="en">${esc(sentenceEn(i))}</span><span class="ko">${esc(sentenceKo(i))}</span></div>`;
+  const roughN = S.rough.filter(Boolean).length;
+  panel.innerHTML = `
+    ${pips()}
+    <div class="eyebrow">완성</div>
+    <h1>${esc(nm)}의 조각상</h1>
+    <div class="plaque"><span class="nm">${esc((S.name || 'MY STATUE').toUpperCase())}</span><span class="sub">A person who ${esc(curVals(0)[0].en.trim())}</span></div>
+    ${roughN ? `<div class="msg rough">거친 표면이 ${roughN}곳 남았어요. ‘다듬기’를 눌러 문장을 고치면 조각상이 매끈해져요.</div>` : `<div class="msg okay">모든 표면이 매끈하게 다듬어졌어요.</div>`}
+    <div class="lines">${L(0)}${L(3)}</div>
+    <details class="private"><summary>나만 보기 · 걸림돌과 작은 실천 (2, 3번)</summary><div class="lines">${L(1)}${L(2)}</div></details>
+    <p class="muted" style="font-size:13.5px">조각상을 끌어서 돌려 보세요. 갤러리 시간에는 짝에게 이렇게 한 문장을 남겨요.</p>
+    <div class="quote"><p class="en">I can see the seeds of greatness in you because you ___.</p><p class="ko">네가 ~하기 때문에, 나는 네 안에서 위대함의 씨앗을 볼 수 있어.</p></div>
+    <div class="card">
+      <p>${S.sentAt ? `✅ ${new Date(S.sentAt).toLocaleString('ko-KR', {month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'})}에 제출했어요. 고쳐서 다시 내면 새 것으로 바뀌어요.` : '다 됐으면 선생님께 제출해요.'}</p>
+      <div class="msg" id="sendMsg" hidden></div>
+      <button class="primary" id="sendBtn" type="button">${S.sentAt ? '다시 제출하기' : '제출하기'}</button>
+    </div>
+    <button class="secondary" id="againBtn" type="button">새 대리석으로 다시 시작</button>`;
+  panel.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => { S.step = +b.dataset.fix; S.view = 'stage'; S.revise = true; S.msg = null; renderStage(); });
+  $('#againBtn').onclick = () => {
+    if (!confirm('지금 조각상을 지우고 새 대리석으로 시작할까요? (이미 제출한 것은 시트에 남아 있어요)')) return;
+    resetScene(); S = fresh({sid:S.sid, name:S.name, grade:S.grade, cls:S.cls, num:S.num}); persist(); renderIntro();
+  };
+  $('#sendBtn').onclick = submit;
+}
+
+async function submit(){
+  const btn = $('#sendBtn'), m = $('#sendMsg');
+  const row = { sid:S.sid, grade:S.grade, cls:S.cls, num:S.num, name:S.name,
+    en:[0,1,2,3].map(sentenceEn), ko:[0,1,2,3].map(sentenceKo),
+    rough:S.rough.filter(Boolean).length, type:S.type,
+    state:JSON.stringify({type:S.type, rough:S.rough, sculpt:S.sculpt, ans:S.ans}) };
+  btn.disabled = true; m.hidden = false; m.className = 'msg'; m.textContent = '제출하는 중…';
+  try{
+    if (SHEET_URL){
+      const r = await call({action:'save', row});
+      if (!r.ok) throw new Error(r.error || 'fail');
+    } else {
+      const rows = load(LOCAL_KEY, []).filter(x => x.sid !== row.sid);
+      rows.push({...row, time:new Date().toISOString()}); save(LOCAL_KEY, rows);
+    }
+    S.sentAt = Date.now(); renderFinal();
+    toast(SHEET_URL ? '<b>제출 완료!</b>' : '<b>저장했어요</b> (연습 모드: 이 기기에만)');
+  }catch(e){
+    btn.disabled = false; m.className = 'msg err'; m.textContent = '제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.';
+  }
+}
+
+/* ------------------------------------------------------------------ 3D scene */
+const canvas = $('#c'), stageEl = $('#stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x171b22, 9, 18);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
+const camBase = new THREE.Vector3(0, 2.5, 7.4), look = new THREE.Vector3(0, 1.85, 0);
+camera.position.copy(camBase); camera.lookAt(look);
+
+scene.add(new THREE.HemisphereLight(0xdfe6f5, 0x2a2420, 0.55));
+const key = new THREE.DirectionalLight(0xffe2b8, 1.25);
+key.position.set(3.5, 6.5, 4.5); key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+Object.assign(key.shadow.camera, {left:-3.5, right:3.5, top:4.5, bottom:-1, near:1, far:16});
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x8fb2ff, 0.55); rim.position.set(-4, 3, -4); scene.add(rim);
+const glow = new THREE.PointLight(0xffc06a, 0, 4.5); glow.position.set(0, 2, 1.1); scene.add(glow);
+
+const floor = new THREE.Mesh(new THREE.CircleGeometry(8, 48), new THREE.MeshStandardMaterial({color:0x232833, roughness:0.95}));
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+
+// marble texture with veins
+function marbleTex(seed, tint){
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const g = cv.getContext('2d');
+  g.fillStyle = tint; g.fillRect(0,0,256,256);
+  let r = seed; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  for (let k = 0; k < 7; k++){
+    g.strokeStyle = `rgba(120,118,128,${0.10 + rnd()*0.18})`; g.lineWidth = 0.6 + rnd()*1.8;
+    g.beginPath(); let x = rnd()*256, y = 0; g.moveTo(x, y);
+    while (y < 256){ x += (rnd()-0.5)*26; y += 10 + rnd()*14; g.lineTo(x, y); }
+    g.stroke();
+  }
+  for (let k = 0; k < 900; k++){ g.fillStyle = `rgba(${rnd()<.5?255:90},${rnd()<.5?250:90},${rnd()<.5?245:100},0.05)`; g.fillRect(rnd()*256, rnd()*256, 2, 2); }
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+const blockMats = [0,1,2,3].map(i => new THREE.MeshStandardMaterial({map:marbleTex(17+i*31, ['#e7e2d9','#ece7df','#dfd9cf','#e4dfd6'][i]), roughness:0.82}));
+const statueMat = new THREE.MeshStandardMaterial({map:marbleTex(99,'#f1ece4'), roughness:0.92, metalness:0.0});
+const rockMat = new THREE.MeshStandardMaterial({color:0x6c6a66, roughness:1, flatShading:true});
+const ghostMat = new THREE.MeshBasicMaterial({color:0xffb24a, transparent:true, opacity:0, depthTest:false, depthWrite:false, blending:THREE.AdditiveBlending});
+
+const pivot = new THREE.Group(); scene.add(pivot);
+// plinth
+const plinth = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.4, 1.9), new THREE.MeshStandardMaterial({color:0x4a4f5b, roughness:0.7}));
+plinth.position.y = 0.2; plinth.castShadow = plinth.receiveShadow = true; pivot.add(plinth);
+const plaqueMat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.4, metalness:0.6, transparent:true, opacity:0});
+const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.28), plaqueMat);
+plaque.position.set(0, 0.2, 0.952); pivot.add(plaque);
+
+// statue
+let statue = null, ghost = null;
+function cyl(rt, rb, h, mat){ const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 20), mat); m.castShadow = true; return m; }
+function sph(r, mat){ const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), mat); m.castShadow = true; return m; }
+function limb(len, r1, r2, mat){
+  const g = new THREE.Group();
+  const c = cyl(r1, r2, len, mat); c.position.y = -len/2; g.add(c);
+  const h = sph(r2 * 1.25, mat); h.position.y = -len; g.add(h);
+  return g;
+}
+function figure(type, mat){
+  const f = new THREE.Group();
+  const add = (m, x, y, z) => { m.position.set(x, y, z); f.add(m); return m; };
+  // legs
+  const legL = limb(1.0, 0.13, 0.1, mat), legR = limb(1.0, 0.13, 0.1, mat);
+  add(legL, -0.18, 1.5, 0); add(legR, 0.18, 1.5, 0);
+  // robe-like torso
+  add(cyl(0.38, 0.31, 1.0, mat), 0, 1.95, 0);
+  add(sph(0.31, mat), 0, 1.47, 0);
+  if (type !== 'run'){ const robe = cyl(0.31, 0.42, 0.62, mat); add(robe, 0, 1.2, 0); }
+  const belt = cyl(0.33, 0.33, 0.06, mat); add(belt, 0, 1.55, 0);
+  add(sph(0.14, mat), -0.42, 2.36, 0); add(sph(0.14, mat), 0.42, 2.36, 0);
+  add(cyl(0.1, 0.11, 0.2, mat), 0, 2.52, 0);
+  const head = add(sph(0.27, mat), 0, 2.84, 0);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.285, 24, 12, 0, Math.PI*2, 0, Math.PI*0.45), mat); hair.castShadow = true; add(hair, 0, 2.86, -0.02); hair.rotation.x = -0.25;
+  const armL = limb(0.98, 0.1, 0.075, mat), armR = limb(0.98, 0.1, 0.075, mat);
+  add(armL, -0.42, 2.36, 0); add(armR, 0.42, 2.36, 0);
+  const pose = (l, r) => { armL.rotation.set(l[0], 0, l[1]); armR.rotation.set(r[0], 0, r[1]); };
+  if (type === 'help'){
+    pose([-0.7, 0.35], [-0.7, -0.35]);
+    const heart = new THREE.Group();
+    const h1 = sph(0.1, mat); h1.position.set(-0.07, 0.04, 0); heart.add(h1);
+    const h2 = sph(0.1, mat); h2.position.set(0.07, 0.04, 0); heart.add(h2);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.22, 20), mat); cone.rotation.z = Math.PI; cone.position.y = -0.1; cone.castShadow = true; heart.add(cone);
+    add(heart, 0, 1.9, 0.56);
+  } else if (type === 'speak'){
+    pose([0.05, -0.12], [-2.25, -0.2]);
+    const mic = new THREE.Group();
+    mic.add(cyl(0.035, 0.03, 0.3, mat)); const b = sph(0.07, mat); b.position.y = 0.18; mic.add(b);
+    mic.rotation.x = -0.5; add(mic, 0.3, 2.85, 0.62);
+    head.rotation.x = -0.1;
+  } else if (type === 'flag'){
+    pose([0.05, -0.12], [0, 2.75]);
+    add(cyl(0.03, 0.03, 1.35, mat), 0.74, 2.75, 0);
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.025), mat); fl.castShadow = true; add(fl, 0.48, 3.25, 0);
+  } else if (type === 'run'){
+    legL.rotation.x = 0.45; legR.rotation.x = -0.45;
+    pose([-0.7, -0.1], [0.7, 0.1]);
+    f.children[2].rotation.x = 0.08;
+  } else if (type === 'joy'){
+    pose([0, -2.45], [0, 2.45]);
+    head.rotation.x = -0.18;
+  } else if (type === 'make'){
+    pose([-0.85, 0.3], [-0.75, -0.1]);
+    const hm = new THREE.Group();
+    hm.add(cyl(0.03, 0.03, 0.5, mat)); const hd = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.12), mat); hd.position.y = 0.26; hd.castShadow = true; hm.add(hd);
+    hm.rotation.x = 0.3; add(hm, 0.36, 2.2, 0.6);
+    const bx = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.26), mat); bx.castShadow = true; add(bx, -0.14, 1.85, 0.55);
+  } else { // heart: hand on heart
+    pose([0.05, -0.12], [-0.75, -0.75]);
+  }
+  return f;
+}
+function buildStatue(type){
+  if (statue) pivot.remove(statue);
+  if (ghost) pivot.remove(ghost);
+  statue = figure(type, statueMat); pivot.add(statue);
+  ghost = figure(type, ghostMat); ghost.traverse(o => { o.renderOrder = 10; o.castShadow = false; }); pivot.add(ghost);
+}
+
+// marble block
+const CUBE = 0.25, NX = 8, NY = 12, NZ = 6;
+const cubeGeo = new THREE.BoxGeometry(CUBE*1.04, CUBE*1.04, CUBE*1.04);
+let cubes = [], order = [];
+const center = new THREE.Vector3(0, 1.9, 0);
+function buildBlock(){
+  cubes.forEach(c => pivot.remove(c));
+  cubes = [];
+  for (let ix = 0; ix < NX; ix++) for (let iy = 0; iy < NY; iy++) for (let iz = 0; iz < NZ; iz++){
+    const m = new THREE.Mesh(cubeGeo, blockMats[(ix*7 + iy*3 + iz*5) % 4]);
+    const x = -1 + CUBE/2 + ix*CUBE, y = 0.4 + CUBE/2 + iy*CUBE, z = -0.75 + CUBE/2 + iz*CUBE;
+    const edge = ix === 0 || ix === NX-1 || iy === NY-1 || iz === 0 || iz === NZ-1;
+    const j = edge ? 0.045 : 0;
+    m.position.set(x + (Math.random()-.5)*j, y + (Math.random()-.5)*j*0.6, z + (Math.random()-.5)*j);
+    m.rotation.set((Math.random()-.5)*j*2, (Math.random()-.5)*j*2, (Math.random()-.5)*j*2);
+    const s = 1 + (edge ? (Math.random()-.5)*0.14 : 0); m.scale.setScalar(s);
+    m.castShadow = m.receiveShadow = true;
+    // distance from the figure's core: outer pieces go first
+    const dx = x / 1.0, dz = z / 0.75, dy = y > 3.1 ? (y - 3.1) / 0.3 : (y < 0.55 ? 0.3 : 0);
+    m.userData.score = Math.sqrt(dx*dx*0.9 + dz*dz*1.1) + dy + Math.random()*0.22;
+    pivot.add(m); cubes.push(m);
+  }
+  order = cubes.slice().sort((a, b) => b.userData.score - a.userData.score);
+}
+
+// tools
+const chisel = new THREE.Group();
+{
+  const steel = new THREE.MeshStandardMaterial({color:0xb9c0c9, metalness:0.85, roughness:0.3});
+  const wood = new THREE.MeshStandardMaterial({color:0x8a6040, roughness:0.7});
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.022, 0.42), steel); blade.position.z = 0.21; chisel.add(blade);
+  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.012, 0.05), steel); tip.position.z = 0.02; chisel.add(tip);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.42, 14), wood); handle.rotation.x = Math.PI/2; handle.position.z = 0.62; chisel.add(handle);
+  chisel.traverse(o => o.castShadow = true);
+}
+const mallet = new THREE.Group();
+{
+  const wood = new THREE.MeshStandardMaterial({color:0x6e4a30, roughness:0.75});
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.3, 18), wood); head.rotation.x = Math.PI/2; mallet.add(head);
+  const h = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 10), wood); h.position.y = -0.3; mallet.add(h);
+  mallet.traverse(o => o.castShadow = true);
+}
+chisel.add(mallet); mallet.position.set(0, 0, 1.25);
+pivot.add(chisel);
+function parkTools(){ chisel.position.set(1.75, 0.55, 0.9); chisel.rotation.set(-1.25, 0.6, 0); mallet.position.set(0, 0, 1.25); }
+parkTools();
+
+// rock with the student's obstacle
+let rock = null;
+function labelTex(text){
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 200;
+  const g = cv.getContext('2d');
+  g.fillStyle = 'rgba(28,24,20,0.82)';
+  const r = 40; g.beginPath(); g.moveTo(r,0); g.arcTo(1024,0,1024,200,r); g.arcTo(1024,200,0,200,r); g.arcTo(0,200,0,0,r); g.arcTo(0,0,1024,0,r); g.fill();
+  g.fillStyle = '#f3e7d2'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let fs = 74; g.font = `600 ${fs}px "IBM Plex Sans KR", sans-serif`;
+  while (g.measureText(text).width > 940 && fs > 30){ fs -= 4; g.font = `600 ${fs}px "IBM Plex Sans KR", sans-serif`; }
+  g.fillText(text, 512, 104);
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t;
+}
+function obstacleText(){
+  const a = S.ans[1], vals = a.vals[a.v];
+  return (a.v === 1 ? vals[0].en : vals[1].en).trim();
+}
+function makeRock(){
+  if (rock) pivot.remove(rock);
+  rock = new THREE.Group();
+  const geo = new THREE.IcosahedronGeometry(0.62, 1);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++){ p.setXYZ(i, p.getX(i)*(1+(Math.random()-.5)*.25)*1.25, p.getY(i)*(1+(Math.random()-.5)*.25)*0.9, p.getZ(i)*(1+(Math.random()-.5)*.25)*0.55); }
+  geo.computeVertexNormals();
+  const body = new THREE.Mesh(geo, rockMat); body.castShadow = true; rock.add(body);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex(obstacleText()), transparent:true}));
+  sp.scale.set(1.9, 0.37, 1); sp.position.set(0, 0, 0.8); sp.renderOrder = 20; rock.add(sp);
+  rock.userData.sprite = sp;
+  rock.position.set(0, 2.05, 0.95);
+  pivot.add(rock);
+  return rock;
+}
+function relabelRock(){ if (rock && rock.parent){ rock.userData.sprite.material.map = labelTex(obstacleText()); rock.userData.sprite.material.needsUpdate = true; } }
+function plaqueTex(){
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 190;
+  const g = cv.getContext('2d');
+  const gr = g.createLinearGradient(0,0,1024,190); gr.addColorStop(0,'#e0b26d'); gr.addColorStop(1,'#9c6a33');
+  g.fillStyle = gr; g.fillRect(0,0,1024,190);
+  g.strokeStyle = 'rgba(40,25,10,.5)'; g.lineWidth = 6; g.strokeRect(10,10,1004,170);
+  g.fillStyle = '#2a1b0b'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '700 70px Cinzel, serif'; g.fillText((S.name || 'MY STATUE').toUpperCase(), 512, 78);
+  let fs = 34; const sub = ('A person who ' + curVals(0)[0].en.trim()).toUpperCase();
+  g.font = `500 ${fs}px Cinzel, serif`;
+  while (g.measureText(sub).width > 950 && fs > 18){ fs -= 2; g.font = `500 ${fs}px Cinzel, serif`; }
+  g.fillText(sub, 512, 142);
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return t;
+}
+
+// flying debris and dust
+const flying = [], dust = [];
+const dustGeo = new THREE.SphereGeometry(0.025, 6, 4);
+const dustMat = new THREE.MeshBasicMaterial({color:0xf1ece4, transparent:true, opacity:0.8});
+function launch(m, power){
+  const wp = m.position.clone();
+  const dir = wp.clone().sub(center); dir.y *= 0.4; dir.normalize();
+  m.userData.v = dir.multiplyScalar(1.4 + Math.random()*1.6*power).add(new THREE.Vector3((Math.random()-.5), 1.6 + Math.random()*1.4, (Math.random()-.5)));
+  m.userData.w = new THREE.Vector3((Math.random()-.5)*8, (Math.random()-.5)*8, (Math.random()-.5)*8);
+  m.userData.life = 0;
+  flying.push(m);
+}
+function puff(p, n){
+  for (let i = 0; i < n; i++){
+    const d = new THREE.Mesh(dustGeo, dustMat.clone());
+    d.position.copy(p);
+    d.userData.v = new THREE.Vector3((Math.random()-.5)*2.2, Math.random()*1.8, Math.random()*1.6 + .3);
+    d.userData.life = 0; pivot.add(d); dust.push(d);
+  }
+}
+
+// tweens
+const tweens = [];
+const ease = p => p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+function tween(dur, fn, e = ease){ if (reduce) dur *= 0.35; return new Promise(res => tweens.push({t:0, dur, fn, e, res})); }
+const wait = ms => tween(ms, () => {});
+
+// sound
+let soundOn = true, actx = null;
+function tock(strength){
+  if (!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const len = 0.12, buf = actx.createBuffer(1, actx.sampleRate*len, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++){ d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 4); }
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 900 + Math.random()*500; f.Q.value = 1.4;
+    const gn = actx.createGain(); gn.gain.value = 0.55 * strength;
+    src.connect(f).connect(gn).connect(actx.destination); src.start();
+  }catch(e){}
+}
+$('#soundBtn').onclick = e => { soundOn = !soundOn; e.currentTarget.textContent = soundOn ? '소리 켜짐' : '소리 꺼짐'; e.currentTarget.setAttribute('aria-pressed', soundOn); };
+
+// one strike of the chisel at a group of pieces
+const tmpV = new THREE.Vector3();
+let shake = 0;
+async function strike(group, power){
+  if (!group.length) return;
+  // aim at the piece nearest the viewer
+  let target = group[0], best = -1e9;
+  group.forEach(m => { m.getWorldPosition(tmpV); if (tmpV.z > best){ best = tmpV.z; target = m; } });
+  const P = target.position.clone();
+  const N = P.clone().sub(center); N.y *= 0.35; N.normalize();
+  const from = chisel.position.clone(), fromQ = chisel.quaternion.clone();
+  const aimPos = P.clone().add(N.clone().multiplyScalar(0.55));
+  const q = new THREE.Quaternion(), m4 = new THREE.Matrix4();
+  m4.lookAt(aimPos.clone().add(N), aimPos, new THREE.Vector3(0,1,0));   // +z points outward
+  q.setFromRotationMatrix(m4);
+  await tween(260, p => { chisel.position.lerpVectors(from, aimPos, p); chisel.quaternion.slerpQuaternions ? chisel.quaternion.slerpQuaternions(fromQ, q, p) : THREE.Quaternion.slerp(fromQ, q, chisel.quaternion, p); });
+  await tween(150, p => { mallet.position.z = 1.25 + 0.45*p; });
+  await tween(90, p => { mallet.position.z = 1.7 - 0.95*p; }, p => p*p);
+  // hit
+  chisel.position.copy(P.clone().add(N.clone().multiplyScalar(0.12)));
+  tock(Math.min(1, 0.6 + 0.2*power));
+  shake = 0.05 * power;
+  group.forEach(m => launch(m, power));
+  puff(P.clone().add(N.clone().multiplyScalar(0.15)), 10 + Math.round(8*power));
+  await tween(140, p => { mallet.position.z = 0.75 + 0.5*p; chisel.position.copy(P.clone().add(N.clone().multiplyScalar(0.12 + 0.35*p))); });
+}
+
+let busy = false;
+async function carveStage(si, sculptor){
+  autoRot = false;
+  const total = cubes.length;
+  let n = si === 3 ? order.length : Math.min(order.length, Math.round(total * (SHARE[si] + (sculptor ? 0.06 : 0))));
+  const batch = order.splice(0, n);
+  const power = sculptor ? 1.6 : 1;
+  const hits = si === 3 ? 5 : (sculptor ? 4 : 3);
+  if (si === 2 && rock){
+    // first knock the rock off
+    const r = rock; rock = null;
+    r.userData.big = true;
+    await strike([r], 1.3);
+    puff(r.position.clone(), 18);
+    await wait(250);
+  }
+  for (let h = 0; h < hits; h++){
+    const part = batch.slice(Math.floor(h * batch.length / hits), Math.floor((h+1) * batch.length / hits));
+    await strike(part, power);
+    await wait(si === 3 ? 60 : 120);
+  }
+  // stage effects
+  if (si === 0){
+    await tween(900, p => { ghostMat.opacity = 0.16 * p; glow.intensity = 1.4 * p; });
+    toast('대리석 안에 <b>조각상</b>이 비치기 시작했어요');
+  }
+  if (si === 1){
+    const r = makeRock(); r.scale.setScalar(0.01);
+    tock(0.8);
+    await tween(500, p => r.scale.setScalar(0.01 + 0.99*p), p => 1 - Math.pow(1-p, 3));
+  }
+  if (si === 3){
+    await tween(1100, p => { ghostMat.opacity = 0.16 * (1-p); glow.intensity = 1.4 * (1-p); });
+    plaqueMat.map = plaqueTex(); plaqueMat.needsUpdate = true;
+    await tween(600, p => { plaqueMat.opacity = p; });
+    updatePolish(true);
+    polishFx();
+  }
+  await tween(400, p => {
+    chisel.position.lerp(new THREE.Vector3(1.75, 0.55, 0.9), p);
+  });
+  parkTools();
+  autoRot = true;
+}
+function updatePolish(animate){
+  const roughN = S.rough.filter(Boolean).length;
+  const target = S.carved[3] || animate ? 0.28 + roughN * 0.16 : 0.92;
+  const from = statueMat.roughness;
+  tween(700, p => { statueMat.roughness = from + (target - from) * p; });
+}
+function polishFx(){
+  if (!statue) return;
+  for (let i = 0; i < 26; i++){
+    const p = new THREE.Vector3((Math.random()-.5)*1.4, 0.6 + Math.random()*2.6, 0.3 + Math.random()*0.4);
+    const d = new THREE.Mesh(dustGeo, new THREE.MeshBasicMaterial({color:0xffd590, transparent:true, opacity:1}));
+    d.position.copy(p); d.scale.setScalar(1.4);
+    d.userData.v = new THREE.Vector3((Math.random()-.5)*.6, .6 + Math.random()*.8, (Math.random()-.5)*.4); d.userData.life = 0; d.userData.spark = true;
+    pivot.add(d); dust.push(d);
+  }
+}
+function resetScene(){
+  flying.splice(0).forEach(m => pivot.remove(m));
+  dust.splice(0).forEach(m => pivot.remove(m));
+  if (rock){ pivot.remove(rock); rock = null; }
+  if (statue){ pivot.remove(statue); pivot.remove(ghost); statue = ghost = null; }
+  ghostMat.opacity = 0; glow.intensity = 0; statueMat.roughness = 0.92;
+  plaqueMat.opacity = 0;
+  buildBlock(); parkTools();
+}
+
+// drag to turn
+let autoRot = true, drag = null, idleAt = 0;
+canvas.addEventListener('pointerdown', e => { drag = {x:e.clientX}; canvas.setPointerCapture(e.pointerId); $('#hint').style.opacity = 0; });
+canvas.addEventListener('pointermove', e => { if (!drag) return; pivot.rotation.y += (e.clientX - drag.x) * 0.01; drag.x = e.clientX; idleAt = performance.now(); });
+canvas.addEventListener('pointerup', () => { drag = null; idleAt = performance.now(); });
+canvas.addEventListener('pointercancel', () => { drag = null; });
+
+function resize(){
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.position.copy(camBase).multiplyScalar(w / h < 1.1 ? 1.25 : 1);
+  camera.updateProjectionMatrix(); camera.lookAt(look);
+}
+new ResizeObserver(resize).observe(stageEl);
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  for (let i = tweens.length - 1; i >= 0; i--){
+    const tw = tweens[i]; tw.t += dt * 1000; const p = Math.min(1, tw.t / tw.dur);
+    tw.fn(tw.e(p)); if (p >= 1){ tweens.splice(i, 1); tw.res(); }
+  }
+  for (let i = flying.length - 1; i >= 0; i--){
+    const m = flying[i], u = m.userData; u.life += dt;
+    u.v.y -= 9.8 * dt;
+    m.position.addScaledVector(u.v, dt);
+    m.rotation.x += u.w.x*dt; m.rotation.y += u.w.y*dt; m.rotation.z += u.w.z*dt;
+    const floorY = u.big ? 0.35 : 0.1;
+    if (m.position.y < floorY){ m.position.y = floorY; u.v.y *= -0.3; u.v.x *= 0.6; u.v.z *= 0.6; u.w.multiplyScalar(0.6); }
+    if (u.life > (u.big ? 2.2 : 1.4)){ const s = Math.max(0, 1 - (u.life - (u.big ? 2.2 : 1.4)) * 2.5); m.scale.setScalar(s * (u.big ? 1 : 1)); if (s <= 0){ pivot.remove(m); flying.splice(i, 1); } }
+  }
+  for (let i = dust.length - 1; i >= 0; i--){
+    const d = dust[i], u = d.userData; u.life += dt;
+    if (!u.spark) u.v.y -= 2.5 * dt;
+    d.position.addScaledVector(u.v, dt);
+    d.material.opacity = Math.max(0, (u.spark ? 1.4 : 0.9) - u.life);
+    if (d.material.opacity <= 0){ pivot.remove(d); dust.splice(i, 1); }
+  }
+  if (ghostMat.opacity > 0) ghostMat.color.setHSL(0.09, 1, 0.5 + Math.sin(now/400)*0.06);
+  if (autoRot && !drag && now - idleAt > 2500) pivot.rotation.y += dt * 0.18;
+  if (!autoRot && !drag){ pivot.rotation.y += (Math.sin(now/1600)*0.25 - normAng(pivot.rotation.y)) * Math.min(1, dt*2); }
+  camera.position.copy(camBase).multiplyScalar(camera.aspect < 1.1 ? 1.25 : 1);
+  if (shake > 0){ camera.position.x += (Math.random()-.5)*shake; camera.position.y += (Math.random()-.5)*shake; shake *= 0.85; if (shake < 0.002) shake = 0; }
+  camera.lookAt(look);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+function normAng(a){ a = a % (Math.PI*2); if (a > Math.PI) a -= Math.PI*2; if (a < -Math.PI) a += Math.PI*2; pivot.rotation.y = a; return a; }
+
+// 새로고침 뒤: 깎아 둔 만큼 애니메이션 없이 바로 되돌려 놓기
+function restoreScene(){
+  if (S.type) buildStatue(S.type);
+  S.carved.forEach((c, si) => {
+    if (!c) return;
+    const n = si === 3 ? order.length : Math.min(order.length, Math.round(cubes.length * (SHARE[si] + (S.sculpt[si] ? 0.06 : 0))));
+    order.splice(0, n).forEach(m => pivot.remove(m));
+  });
+  if (S.carved[0] && !S.carved[3]){ ghostMat.opacity = 0.16; glow.intensity = 1.4; }
+  if (S.carved[1] && !S.carved[2]) makeRock();
+  if (S.carved[3]){
+    plaqueMat.map = plaqueTex(); plaqueMat.needsUpdate = true; plaqueMat.opacity = 1;
+    statueMat.roughness = 0.28 + S.rough.filter(Boolean).length * 0.16;
+  }
+}
+
+buildBlock();
+resize();
+pivot.rotation.y = -0.35;
+restoreScene();
+requestAnimationFrame(frame);
+if (S.view === 'final') renderFinal();
+else if (S.view === 'stage' && S.step >= 0) renderStage();
+else renderIntro();
+
+/* ------------------------------------------------------------------ 교사 모드 (#teacher) */
+function teacherMode(){
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const ICON = {help:'🤝', speak:'🎤', flag:'🚩', run:'🏃', joy:'😄', make:'🔨', heart:'💛'};
+  const OPT_KEY = 'is-teacher-opt';
+  const opt = Object.assign({cls:'', names:true, priv:false, big:false}, load(OPT_KEY, {}));
+  let rows = [], tpw = '';
+  try{ tpw = sessionStorage.getItem('is-tpw') || ''; }catch(e){}
+  const root = $('#teacher'); root.hidden = false;
+
+  function login(msg){
+    root.innerHTML = `<div class="t-login card">
+      <h2>내 안의 조각상 · 교사 모드</h2>
+      <label class="fld" for="tpw">교사 암호<input class="txt" id="tpw" type="password" autocomplete="off"></label>
+      ${msg ? `<div class="msg err">${esc(msg)}</div>` : ''}
+      <button class="primary" id="tBtn" type="button">들어가기</button>
+      <a class="link" href="./" onclick="setTimeout(()=>location.reload())">← 학생 화면으로</a></div>`;
+    $('#tBtn').onclick = () => { tpw = $('#tpw').value; enter(); };
+    $('#tpw').onkeydown = e => { if (e.key === 'Enter') $('#tBtn').click(); };
+    $('#tpw').focus();
+  }
+  async function fetchRows(){
+    if (!SHEET_URL){ rows = load(LOCAL_KEY, []); return true; }
+    const r = await call({action:'list', pw:tpw});
+    if (!r.ok){ try{ sessionStorage.removeItem('is-tpw'); }catch(e){} return false; }
+    try{ sessionStorage.setItem('is-tpw', tpw); }catch(e){}
+    rows = r.rows; return true;
+  }
+  async function enter(){
+    root.innerHTML = `<p class="muted" style="padding:40px;text-align:center">불러오는 중…</p>`;
+    try{ if (!(await fetchRows())) return login('암호가 맞지 않아요.'); }
+    catch(e){ return login('불러오지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+    view();
+  }
+  function view(){
+    save(OPT_KEY, opt);
+    const classes = [...new Set(rows.map(r => r.grade + '-' + r.cls))].sort((a, b) => a.localeCompare(b, 'ko', {numeric:true}));
+    if (opt.cls && !classes.includes(opt.cls)) opt.cls = '';
+    const list = rows.filter(r => !opt.cls || r.grade + '-' + r.cls === opt.cls).sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
+    const L = (r, i) => `<div class="line"><div class="lab"><span>${i+1}. ${esc(STAGES[i].short)}</span></div><span class="en">${esc(r.en[i])}</span><span class="ko">${esc(r.ko[i])}</span></div>`;
+    root.innerHTML = `
+      <div class="t-head">
+        <h2>내 안의 조각상 · 교사 모드${SHEET_URL ? '' : ' <span class="badge">연습 모드</span>'}</h2>
+        <div class="t-bar">
+          <select class="txt" id="fCls" aria-label="반 고르기"><option value="">전체 반</option>${classes.map(c => `<option value="${c}" ${c === opt.cls ? 'selected' : ''}>${c.replace('-', '학년 ')}반</option>`).join('')}</select>
+          <label><input type="checkbox" id="oNames" ${opt.names ? 'checked' : ''}> 이름 보기</label>
+          <label><input type="checkbox" id="oPriv" ${opt.priv ? 'checked' : ''}> 2·3번(나만 보기)도 보기</label>
+          <label><input type="checkbox" id="oBig" ${opt.big ? 'checked' : ''}> 큰 글씨</label>
+          <button class="secondary" id="tRef" type="button">🔄 새로고침</button>
+          <button class="secondary" id="tCopy" type="button">📋 엑셀용 복사</button>
+        </div>
+        <p class="muted">${list.length}명 제출 · 학생 화면의 2·3번(걸림돌·작은 실천)은 학생에게 '나만 보기'로 안내돼 있어요. 화면에 띄울 때는 끄고 보여 주세요.</p>
+      </div>
+      <div class="t-grid ${opt.big ? 'big' : ''}">${list.map(r => `
+        <article class="card t-card">
+          <div class="t-top"><span class="t-ico" aria-hidden="true">${ICON[r.type] || '🗿'}</span>
+            <div><b>${r.cls}반 ${r.num}번${opt.names ? ' ' + esc(r.name) : ''}</b>
+            <div class="muted" style="font-size:12px">${new Date(r.time).toLocaleString('ko-KR', {month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'})}${r.rough ? ` · <span style="color:var(--rough)">거친 표면 ${r.rough}곳</span>` : ''}</div></div>
+            <button class="ghost-btn t-del" type="button" data-sid="${esc(r.sid)}" aria-label="삭제">삭제</button></div>
+          <div class="lines">${L(r, 0)}${opt.priv ? L(r, 1) + L(r, 2) : ''}${L(r, 3)}</div>
+        </article>`).join('') || '<p class="muted">아직 제출한 학생이 없어요.</p>'}</div>`;
+    $('#fCls').onchange = e => { opt.cls = e.target.value; view(); };
+    $('#oNames').onchange = e => { opt.names = e.target.checked; view(); };
+    $('#oPriv').onchange = e => { opt.priv = e.target.checked; view(); };
+    $('#oBig').onchange = e => { opt.big = e.target.checked; view(); };
+    $('#tRef').onclick = enter;
+    $('#tCopy').onclick = async () => {
+      const head = ['학번', '반', '번호', '이름', ...STAGES.map((s, i) => `${i+1}. ${s.short}`), '거친 표면'];
+      const text = [head, ...list.map(r => [r.sid, r.cls, r.num, r.name, ...r.en, r.rough])].map(a => a.join('\t')).join('\n');
+      try{ await navigator.clipboard.writeText(text); $('#tCopy').textContent = '✅ 복사됨'; }catch(e){ alert('복사하지 못했어요.'); }
+    };
+    root.querySelectorAll('.t-del').forEach(b => b.onclick = async () => {
+      const r = rows.find(x => x.sid === b.dataset.sid);
+      if (!confirm(`${r.cls}반 ${r.num}번 ${r.name} 학생의 제출을 지울까요?`)) return;
+      b.disabled = true;
+      try{
+        if (SHEET_URL){ const x = await call({action:'del', pw:tpw, sid:r.sid}); if (!x.ok) throw 0; }
+        else save(LOCAL_KEY, load(LOCAL_KEY, []).filter(x => x.sid !== r.sid));
+        rows = rows.filter(x => x !== r); view();
+      }catch(e){ b.disabled = false; alert('지우지 못했어요.'); }
+    });
+  }
+  (SHEET_URL && !tpw) ? login() : enter();
+}
+})();
+</script>
+
+</body></html>
